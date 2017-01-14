@@ -1,0 +1,136 @@
+<project name="Restaurant Locator Lightning Component" default="verifyDeploy" basedir="." xmlns:sf="antlib:com.salesforce">
+
+	<property file="build.properties"/>
+	<property environment="env"/>
+
+	<taskdef resource="com/salesforce/antlib.xml" uri="antlib:com.salesforce">
+		<classpath>
+			<pathelement location="../ant-salesforce.jar" />
+		</classpath>
+	</taskdef>
+
+	<!-- set variables based on the deployEnv in the build.properties -->
+	<condition property="isBuild">
+		<equals arg1="${deployEnv}" arg2="build" casesensitive="false"/>
+	</condition>
+	<condition property="isDev2">
+		<equals arg1="${deployEnv}" arg2="dev2" casesensitive="false"/>
+	</condition>
+
+
+
+	<!-- executes to set the parameters -->
+	<target name="initBuild" if="isBuild">
+		<property name="sf.username" value="${sfBuild.username}"/>
+		<property name="sf.password" value="${sfBuild.password}"/>
+	</target>
+	<target name="initDev2" if="isDev2">
+		<property name="sf.username" value="${sfDev2.username}"/>
+		<property name="sf.password" value="${sfDev2.password}"/>
+	</target>
+
+	<target name="init" depends="initBuild, initDev2">
+		<tstamp>
+			<format property="current.time.EST" pattern="MM/dd/yyyy hh:mm:ss aa" timezone="GMT-5"/>
+			<format property="current.time.PST" pattern="MM/dd/yyyy hh:mm:ss aa" timezone="GMT-8"/>
+			<format property="current.time.GMT" pattern="MM/dd/yyyy hh:mm:ss aa" timezone="GMT"/>
+		</tstamp>
+
+		<property name="sf.env" value="${env}"/>
+		<!--<property name="sf.username" value="${sfBuild.username}"/>-->
+		<!--<property name="sf.password" value="${sfBuild.password}"/>-->
+		<echo>
+	_____________________________________________________________________________________________________________
+	        
+	            Task start time: ${current.time.EST} (EST)
+	            Task start time: ${current.time.PST} (PST)
+	        	Task start time: ${current.time.GMT} (GMT)
+	            Current account ${sf.username}
+
+
+	            Current password ${sf.password}
+
+
+	_____________________________________________________________________________________________________________
+	        </echo>
+	</target>
+
+	<!-- global defined executions so that dont' have to execute sf:deploy everywhere -->
+	<presetdef name="deployNoTests">
+		<sf:deploy username="${sf.username}" 
+	                   password="${sf.password}" 
+					   serverurl="${sf.serverurl}" 
+					   deployRoot="src"
+					   checkOnly="false" 
+					   ignoreWarnings="true" 
+					   runAllTests="false" 
+					   rollbackOnError="true"                    
+					   pollWaitMillis="10000" 
+					   maxPoll="40" 
+					   trace="false" 
+					   logType="None" >
+		</sf:deploy>
+	</presetdef >
+	<presetdef name="deploy">
+		<sf:deploy username="${sf.username}"
+	                   password="${sf.password}"
+	                   serverurl="${sf.serverurl}"
+	                   deployRoot="src"
+	                   checkOnly="false"
+	                   ignoreWarnings="true"
+	                   runAllTests="true"
+	                   rollbackOnError="true"
+	                   pollWaitMillis="500"
+	                   maxPoll="3000"/>
+	</presetdef>
+
+	<!-- Verifies the metadata to specified environments -->
+	<target name="verifyDeploy" depends="init" description="Verifies metadata to specified environment(command line parameter) without running tests" >
+		<deployNoTests checkOnly="true" />
+	</target>
+
+	<target name="quickDeploy" depends="init">
+		<deployNoTests />
+	</target>
+
+	<!-- **************************************** Post & Pre deploy targets **************************************** -->
+	<!-- Pre Deploy -->
+	<target name="verifyPreDeploy" depends="init" description="Verifies PreDeploy changes to  to specified environment(command line parameter) without running tests" >
+		<deployNoTests deployRoot="predeploy" checkOnly="true" />
+	</target>
+
+	<target name="testPreDeploy" depends="init" description="Tests PreDeploy changes to specified environment(command line parameter)" >
+		<deploy deployRoot="predeploy" checkOnly="true" />
+	</target>
+
+	<target name="quickPreDeploy" depends="init" description="PreDeploy changes to  to specified environment(command line parameter) without running tests" >
+		<deployNoTests deployRoot="predeploy" />
+	</target>
+
+	<!-- Post Deploy -->
+	<target name="verifyPostDeploy" depends="init" description="Verifies PostDeploy changes to specified environment(command line parameter) without running tests" >
+		<deployNoTests deployRoot="postdeploy" checkOnly="true" />
+	</target>
+
+	<target name="testPostDeploy" depends="init" description="Tests PostDeploy changes to specified environment(command line parameter)" >
+		<deploy deployRoot="postdeploy" checkOnly="true" />
+	</target>
+
+	<target name="quickPostDeploy" depends="init" description="PostDeploy changes to  to specified environment(command line parameter) without running tests" >
+		<deployNoTests deployRoot="postdeploy" />
+	</target>
+
+	<!-- **************************************** Post & Pre install targets **************************************** -->
+	<target name="preInstall" depends="init" description="PreInstall" >
+		<sf:deploy username="${sf.username}" password="${sf.password}" serverurl="${sf.serverurl}" deployRoot="preinstall" ignoreWarnings="true" pollWaitMillis="20000"/>
+	</target>
+
+	<target name="postInstall" depends="init" description="PostInstall" >
+		<sf:deploy username="${sf.username}" password="${sf.password}" serverurl="${sf.serverurl}" deployRoot="postinstall" ignoreWarnings="true"  pollWaitMillis="20000"/>
+	</target>
+
+	<target name="preUninstall" depends="init" description="PreUninstall" >
+		<sf:deploy username="${sf.username}" password="${sf.password}" serverurl="${sf.serverurl}" deployRoot="preuninstall" ignoreWarnings="true"  pollWaitMillis="20000"/>
+	</target>
+
+</project>
